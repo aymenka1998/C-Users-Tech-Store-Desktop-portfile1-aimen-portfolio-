@@ -1,27 +1,7 @@
-# Dependencies
 node_modules/
-/node_modules
-
-# Build outputs
 .next/
-/dist
-/build
-out/
-
-# Debug logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment variables (Crucial for security)
-.env
-.env.*
-!.env.example
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Vercel
+dist/
+build/
+.env*
 .vercel
+*.log
