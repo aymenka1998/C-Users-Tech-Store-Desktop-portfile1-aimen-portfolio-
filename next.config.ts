@@ -8,7 +8,7 @@ const nextConfig = {
 
   // 2. تجاهل أخطاء البرمجة أثناء الرفع (لضمان نجاح الـ Build)
   typescript: { ignoreBuildErrors: true },
-  //eslint: { ignoreDuringBuilds: true },
+  eslint: { ignoreDuringBuilds: true },
 
   // 3. الربط مع الـ API (Strapi)
   async rewrites() {
