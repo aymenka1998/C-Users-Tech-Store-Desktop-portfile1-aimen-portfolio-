@@ -10,12 +10,19 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const articles = await getArticles();
-  return articles.map((article: any) => ({
-    slug: article.attributes.slug,
-  }));
+  try {
+    const articles = await getArticles();
+    // نتحقق إذا كانت articles موجودة وهي مصفوفة
+    if (!articles || !Array.isArray(articles)) return [];
+    
+    return articles.map((article: any) => ({
+      slug: article.attributes.slug,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch articles for build:", error);
+    return []; // نرجع مصفوفة فارغة لكي ينجح الـ Build
+  }
 }
-
 export async function generateMetadata({ params }: Props) {
   const article = await getArticleBySlug(params.slug);
 
