@@ -1,6 +1,7 @@
 // lib/strapi.ts
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
+// استخدام الرابط من متغيرات البيئة مع حماية افتراضية
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
 const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 // ==================== Types ====================
@@ -29,6 +30,20 @@ export interface Project {
   content?: string;
 }
 
+export interface Article {
+  id: number;
+  documentId: string;
+  title: string;
+  description: string;
+  slug: string;
+  content: string;
+  publishedAt: string;
+  cover?: {
+    url: string;
+    alternativeText: string | null;
+  };
+}
+
 export interface CreateProjectInput {
   title: string;
   description: string;
@@ -44,8 +59,6 @@ export interface CreateProjectInput {
   content?: string;
 }
 
-// تم حذف UpdateProjectInput الفارغة واستخدام المبدأ مباشرة في الدوال
-// أو يمكنك تركها هكذا إذا كنت ستضيف حقولاً لاحقاً، لكن ESLint يفضل النوع المباشر
 export type UpdateProjectInput = Partial<CreateProjectInput>;
 
 export interface StrapiResponse<T> {
@@ -62,7 +75,7 @@ export interface StrapiResponse<T> {
 
 export interface StrapiSingleResponse<T> {
   data: T;
-  meta: Record<string, unknown>; // تم استبدال {} بـ Record لتجنب خطأ ESLint
+  meta: Record<string, unknown>;
 }
 
 // ==================== Helper Functions ====================
@@ -85,7 +98,7 @@ function getHeaders(): HeadersInit {
   return headers;
 }
 
-// ==================== READ Operations ====================
+// ==================== READ Operations (Projects) ====================
 
 export async function getProjects(
   options: {
@@ -94,8 +107,9 @@ export async function getProjects(
     sort?: string;
   } = {}
 ): Promise<Project[]> {
-  const { featured, limit = 100, sort = "publishedAt:desc" } = options;
+  if (!STRAPI_URL) return [];
 
+  const { featured, limit = 100, sort = "publishedAt:desc" } = options;
   const params = new URLSearchParams({
     sort,
     "pagination[pageSize]": limit.toString(),
@@ -106,18 +120,15 @@ export async function getProjects(
     params.append("filters[featured][$eq]", featured.toString());
   }
 
-  const url = `${STRAPI_URL}/api/projects?${params.toString()}`;
-
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/projects?${params.toString()}`, {
       headers: getHeaders(),
       next: { revalidate: 60 },
     });
 
     if (!res.ok) throw new Error("Failed to fetch projects");
-
     const json: StrapiResponse<Project> = await res.json();
-    return json.data;
+    return json.data || [];
   } catch (error) {
     console.error("Error fetching projects:", error);
     return [];
@@ -125,44 +136,29 @@ export async function getProjects(
 }
 
 export async function getProjectBySlug(slug: string): Promise<Project | null> {
-  const params = new URLSearchParams({
-    "filters[slug][$eq]": slug,
-    populate: "*",
-  });
-
-  const url = `${STRAPI_URL}/api/projects?${params.toString()}`;
-
+  if (!STRAPI_URL) return null;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/projects?filters[slug][$eq]=${slug}&populate=*`, {
       headers: getHeaders(),
       next: { revalidate: 60 },
     });
-
-    if (!res.ok) throw new Error("Failed to fetch project");
-
     const json: StrapiResponse<Project> = await res.json();
-    return json.data[0] || null;
+    return json.data?.[0] || null;
   } catch (error) {
-    console.error("Error fetching project:", error);
     return null;
   }
 }
 
-export async function getProjectById(id: number): Promise<Project | null> {
-  const url = `${STRAPI_URL}/api/projects/${id}?populate=*`;
-
+export async function getProjectById(id: number | string): Promise<Project | null> {
+  if (!STRAPI_URL) return null;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/projects/${id}?populate=*`, {
       headers: getHeaders(),
       next: { revalidate: 60 },
     });
-
-    if (!res.ok) throw new Error("Failed to fetch project");
-
     const json: StrapiSingleResponse<Project> = await res.json();
-    return json.data;
+    return json.data || null;
   } catch (error) {
-    console.error("Error fetching project:", error);
     return null;
   }
 }
@@ -171,17 +167,40 @@ export async function getFeaturedProjects(limit = 3): Promise<Project[]> {
   return getProjects({ featured: true, limit });
 }
 
-export async function getLatestProjects(limit = 6): Promise<Project[]> {
-  return getProjects({ limit, sort: "publishedAt:desc" });
+// ==================== READ Operations (Articles) ====================
+
+export async function getArticles(): Promise<Article[]> {
+  if (!STRAPI_URL) return [];
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/articles?populate=*&sort=publishedAt:desc`, {
+      headers: getHeaders(),
+      next: { revalidate: 3600 }
+    });
+    const json: StrapiResponse<Article> = await res.json();
+    return json.data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  if (!STRAPI_URL) return null;
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/articles?filters[slug][$eq]=${slug}&populate=*`, {
+      headers: getHeaders(),
+      next: { revalidate: 3600 }
+    });
+    const json: StrapiResponse<Article> = await res.json();
+    return json.data?.[0] || null;
+  } catch (error) {
+    return null;
+  }
 }
 
 // ==================== CREATE Operations ====================
 
-export async function createProject(
-  data: CreateProjectInput
-): Promise<Project | null> {
-  const url = `${STRAPI_URL}/api/projects`;
-
+export async function createProject(data: CreateProjectInput): Promise<Project | null> {
+  if (!STRAPI_URL) return null;
   const formattedData = {
     data: {
       ...data,
@@ -189,266 +208,127 @@ export async function createProject(
       publishedAt: new Date().toISOString(),
     },
   };
-
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/projects`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(formattedData),
     });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error?.message || "Failed to create project");
-    }
-
     const json: StrapiSingleResponse<Project> = await res.json();
     return json.data;
   } catch (error) {
-    console.error("Error creating project:", error);
     throw error;
   }
 }
 
+// ==================== UPDATE/DELETE Operations ====================
 
-// ==================== UPDATE Operations ====================
-
-// ==================== UPDATE Operations ====================
-
-export async function updateProject(
-  id: number,
-  data: UpdateProjectInput
-): Promise<Project | null> {
-  const url = `${STRAPI_URL}/api/projects/${id}`;
-
-  // 1. تفكيك التاجز بعيداً عن بقية البيانات
+export async function updateProject(id: number | string, data: UpdateProjectInput): Promise<Project | null> {
+  if (!STRAPI_URL) return null;
   const { tags, ...restOfData } = data;
-
-  // 2. بناء الكائن النهائي بنوع صريح يتقبله TypeScript
-  const payload: {
-    data: Omit<UpdateProjectInput, 'tags'> & {
-      tags?: Array<{ name: string }>;
-    };
-  } = {
+  const payload = {
     data: {
       ...restOfData,
-      // تحويل التاجز فقط إذا كانت موجودة
       ...(tags && { tags: tags.map((name) => ({ name })) }),
     },
   };
-
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/projects/${id}`, {
       method: "PUT",
       headers: getHeaders(),
       body: JSON.stringify(payload),
     });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error?.message || "Failed to update project");
-    }
-
     const json: StrapiSingleResponse<Project> = await res.json();
     return json.data;
   } catch (error) {
-    console.error("Error updating project:", error);
     throw error;
   }
 }
 
-// ==================== DELETE Operations ====================
-
-export async function deleteProject(id: number): Promise<boolean> {
-  const url = `${STRAPI_URL}/api/projects/${id}`;
-
+export async function deleteProject(id: number | string): Promise<boolean> {
+  if (!STRAPI_URL) return false;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/projects/${id}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error?.message || "Failed to delete project");
-    }
-
-    return true;
+    return res.ok;
   } catch (error) {
-    console.error("Error deleting project:", error);
-    throw error;
+    return false;
   }
 }
 
 // ==================== UPLOAD Operations ====================
 
 export async function uploadImage(file: File): Promise<{ url: string } | null> {
-  const url = `${STRAPI_URL}/api/upload`;
-
+  if (!STRAPI_URL) return null;
   const formData = new FormData();
   formData.append("files", file);
-
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/upload`, {
       method: "POST",
-      headers: STRAPI_API_TOKEN
-        ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` }
-        : {},
+      headers: STRAPI_API_TOKEN ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {},
       body: formData,
     });
-
-    if (!res.ok) throw new Error("Failed to upload image");
-
     const data = await res.json();
     return { url: data[0].url };
   } catch (error) {
-    console.error("Error uploading image:", error);
     return null;
   }
 }
 
 // ==================== SEARCH & FILTER ====================
 
-export interface SearchFilters {
-  query?: string;
-  tags?: string[];
-  featured?: boolean;
-  sortBy?: "date" | "title" | "stars" | "createdAt";
-  sortOrder?: "asc" | "desc";
-}
-
-export async function searchProjects(
-  filters: SearchFilters = {},
-  limit = 100
-): Promise<Project[]> {
+export async function searchProjects(filters: any = {}, limit = 100): Promise<Project[]> {
+  if (!STRAPI_URL) return [];
   const { query, tags, featured, sortBy = "createdAt", sortOrder = "desc" } = filters;
-  
   const params = new URLSearchParams({
     "pagination[pageSize]": limit.toString(),
     populate: "*",
     sort: `${sortBy}:${sortOrder}`,
   });
-
   if (query) {
     params.append("filters[$or][0][title][$containsi]", query);
     params.append("filters[$or][1][description][$containsi]", query);
   }
-
   if (tags && tags.length > 0) {
-    tags.forEach((tag, index) => {
+    tags.forEach((tag: string, index: number) => {
       params.append(`filters[tags][name][$in][${index}]`, tag);
     });
   }
-
-  if (featured !== undefined) {
-    params.append("filters[featured][$eq]", featured.toString());
-  }
-
-  const url = `${STRAPI_URL}/api/projects?${params.toString()}`;
-
   try {
-    const res = await fetch(url, {
-      headers: getHeaders(),
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) throw new Error("Failed to search projects");
-
+    const res = await fetch(`${STRAPI_URL}/api/projects?${params.toString()}`, { headers: getHeaders() });
     const json: StrapiResponse<Project> = await res.json();
-    return json.data;
+    return json.data || [];
   } catch (error) {
-    console.error("Error searching projects:", error);
     return [];
   }
 }
 
 export async function getAllTags(): Promise<string[]> {
-  const url = `${STRAPI_URL}/api/projects?populate[tags]=*&pagination[pageSize]=1000`;
-
+  if (!STRAPI_URL) return [];
   try {
-    const res = await fetch(url, {
-      headers: getHeaders(),
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) throw new Error("Failed to fetch tags");
-
+    const res = await fetch(`${STRAPI_URL}/api/projects?populate[tags]=*&pagination[pageSize]=1000`, { headers: getHeaders() });
     const json: StrapiResponse<Project> = await res.json();
     const allTags = json.data.flatMap((p) => p.tags?.map((t) => t.name) || []);
     return [...new Set(allTags)].sort();
   } catch (error) {
-    console.error("Error fetching tags:", error);
     return [];
-  }
-}
-
-// ==================== REORDER Operations ====================
-
-export async function updateProjectOrder(
-  id: number,
-  newOrder: number
-): Promise<Project | null> {
-  return updateProject(id, { teamSize: newOrder });
-}
-
-export async function saveProjectsOrder(
-  projectsOrder: { id: number; order: number }[]
-): Promise<boolean> {
-  try {
-    await Promise.all(
-      projectsOrder.map(({ id, order }) => updateProjectOrder(id, order))
-    );
-    return true;
-  } catch (error) {
-    console.error("Error saving order:", error);
-    return false;
   }
 }
 
 // ==================== CONTACT Operations ====================
 
-export interface ContactInput {
-  name: string;
-  email: string;
-  message: string;
-}
-
-export async function sendContactMessage(data: ContactInput): Promise<boolean> {
-  const url = `${STRAPI_URL}/api/contacts`; 
-
-  const formattedData = {
-    data: data,
-  };
-
+export async function sendContactMessage(data: { name: string; email: string; message: string }): Promise<boolean> {
+  if (!STRAPI_URL) return false;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${STRAPI_URL}/api/contacts`, {
       method: "POST",
-      headers: getHeaders(), 
-      body: JSON.stringify(formattedData),
+      headers: getHeaders(),
+      body: JSON.stringify({ data }),
     });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error?.message || "Failed to send message");
-    }
-
-    return true;
+    return res.ok;
   } catch (error) {
-    console.error("Error in sendContactMessage:", error);
-    throw error;
+    return false;
   }
-}
-export async function getArticles() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/articles?populate=*`, {
-    //cache: 'no-store', // أو استخدم revalidate إذا كنت تفضل ISR
-    next: { revalidate: 3600 }
-  });
-  const data = await res.json();
-  return data.data;
-}
-
-export async function getArticleBySlug(slug: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/articles?filters[slug][$eq]=${slug}&populate=*`);
-  const data = await res.json();
-  return data.data[0];
 }

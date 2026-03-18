@@ -1,4 +1,5 @@
 // app/blog/page.tsx
+export const dynamic = 'force-dynamic';
 import { getArticles, getStrapiImageUrl } from "../../lib/strapi";
 import Image from "next/image";
 import Link from "next/link";
