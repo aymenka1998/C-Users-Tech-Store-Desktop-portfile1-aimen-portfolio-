@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 export default async function BlogPage() {
-  // جلب البيانات مع التأكد أنها مصفوفة حتى لو فشل الطلب أو كانت قاعدة البيانات فارغة
+  // جلب البيانات (ستصلنا البيانات مسطحة Flattened بفضل التعديل الأخير في lib/strapi.ts)
   const fetchedArticles = await getArticles();
   const articles = Array.isArray(fetchedArticles) ? fetchedArticles : [];
 
@@ -31,8 +31,12 @@ export default async function BlogPage() {
       {articles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {articles.map((article: any) => {
-            const { title, description, cover, slug, publishedAt } = article.attributes || {};
-            const imageUrl = getStrapiImageUrl(cover?.data?.attributes?.url);
+            // التعديل هنا: في Strapi v5 البيانات مباشرة داخل الكائن وليست داخل attributes
+            // وقمنا بتعريف الحقول في الـ Interface سابقاً
+            const { title, description, cover, slug, publishedAt } = article;
+            
+            // في v5، هيكلية الصورة cover أصبحت مباشرة أيضاً
+            const imageUrl = getStrapiImageUrl(cover?.url || null);
 
             return (
               <Link 
@@ -42,7 +46,7 @@ export default async function BlogPage() {
               >
                 {/* Image Container */}
                 <div className="relative h-52 w-full overflow-hidden">
-                  {imageUrl ? (
+                  {imageUrl && imageUrl !== "/placeholder-project.jpg" ? (
                     <Image
                       src={imageUrl}
                       alt={title || "Blog Post"}
@@ -51,7 +55,7 @@ export default async function BlogPage() {
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-purple-900/20 to-black flex items-center justify-center">
-                      <span className="text-gray-600">No Image</span>
+                      <span className="text-gray-600 text-xs">No Image Available</span>
                     </div>
                   )}
                   <div className="absolute top-4 left-4 bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
@@ -89,7 +93,6 @@ export default async function BlogPage() {
           })}
         </div>
       ) : (
-        /* الحالة التي تظهر عند عدم وجود مقالات أو فشل الجلب (تحمي الـ Build) */
         <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl">
           <p className="text-gray-500 mb-4">No articles found in the database.</p>
           <p className="text-sm text-gray-600">Make sure you have published articles on your Strapi dashboard.</p>
