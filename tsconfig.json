@@ -37,7 +37,7 @@
     "**/*.mts",
     "dist/types/**/*.ts",
     "dist/dev/types/**/*.ts"
-  ],
+, "next.config.mjs"  ],
   "exclude": [
     "node_modules"
   ]
