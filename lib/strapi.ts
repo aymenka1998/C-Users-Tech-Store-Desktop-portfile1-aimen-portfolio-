@@ -438,3 +438,17 @@ export async function sendContactMessage(data: ContactInput): Promise<boolean> {
     throw error;
   }
 }
+export async function getArticles() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/articles?populate=*`, {
+    //cache: 'no-store', // أو استخدم revalidate إذا كنت تفضل ISR
+    next: { revalidate: 3600 }
+  });
+  const data = await res.json();
+  return data.data;
+}
+
+export async function getArticleBySlug(slug: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/articles?filters[slug][$eq]=${slug}&populate=*`);
+  const data = await res.json();
+  return data.data[0];
+}

@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
+    domains: ['localhost'],
   },
 
   // 2. تجاهل أخطاء البرمجة أثناء الرفع (لضمان نجاح الـ Build)

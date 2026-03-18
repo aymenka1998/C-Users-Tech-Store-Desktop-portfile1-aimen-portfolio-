@@ -7,6 +7,7 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+ 
   theme: {
     extend: {
       colors: {
@@ -51,7 +52,10 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+   plugins: [
+  require('@tailwindcss/typography'),
+  // plugins الأخرى الخاصة بك
+],
 };
 
 export default config;

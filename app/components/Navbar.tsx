@@ -165,6 +165,7 @@ export default function Navbar() {
             </div>
           </motion.div>
         )}
+        <Link href="/blog" className="hover:text-purple-400 transition">Blog</Link>
       </AnimatePresence>
     </nav>
   );
