@@ -12,6 +12,7 @@ const navLinks = [
   { name: "Projects", href: "#projects" },
   { name: "Experience", href: "#experience" },
   { name: "Contact", href: "#contact" },
+  {name: "Blog", href:"/blog"}
 ];
 
 export default function Navbar() {
@@ -165,7 +166,7 @@ export default function Navbar() {
             </div>
           </motion.div>
         )}
-        <Link href="/blog" className="hover:text-purple-400 transition">Blog</Link>
+        
       </AnimatePresence>
     </nav>
   );
