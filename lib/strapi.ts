@@ -1,9 +1,10 @@
 // lib/strapi.ts
 
+// استخدام الروابط من متغيرات البيئة
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://127.0.0.1:1337";
 const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
-// ==================== Types (Updated for Strapi v5) ====================
+// ==================== Types ====================
 
 export interface Project {
   id: number;
@@ -41,8 +42,8 @@ export interface Article {
 // ==================== Helper Functions ====================
 
 /**
- * دالة سحرية لتحويل هيكلية Strapi v4/v5 المعقدة إلى كائنات بسيطة
- * تقوم بحذف .attributes وتجعل الوصول للبيانات مباشراً
+ * دالة ذكية لتحويل هيكلية Strapi v5 المعقدة إلى كائنات بسيطة
+ * تحل مشكلة الوصول للبيانات وتجعل العناوين تظهر بشكل صحيح
  */
 function flattenStrapiData(data: any): any {
   if (!data) return null;
@@ -53,21 +54,18 @@ function flattenStrapiData(data: any): any {
 
   let flattened = { ...data };
 
-  // التعامل مع نظام attributes القديم إذا وجد لضمان التوافق
+  // التعامل مع نظام attributes القديم لضمان التوافق الشامل
   if (data.attributes) {
     flattened = { ...flattened, ...data.attributes };
     delete flattened.attributes;
   }
 
-  // التكرار داخل الكائنات الملحقة (مثل images و tags) لتسطيحها أيضاً
+  // تنظيف الكائنات المتداخلة (مثل الصور والوسوم)
   for (const key in flattened) {
     if (flattened[key] && typeof flattened[key] === "object") {
-      // إذا كان كائن يحتوي على data بداخلها (مثل الصور في Strapi)
       if (flattened[key].data !== undefined) {
         flattened[key] = flattenStrapiData(flattened[key].data);
-      } 
-      // تسطيح الكائنات العادية
-      else if (!Array.isArray(flattened[key]) && key !== "tags") {
+      } else if (!Array.isArray(flattened[key]) && key !== "tags") {
         flattened[key] = flattenStrapiData(flattened[key]);
       }
     }
@@ -89,69 +87,130 @@ function getHeaders(): HeadersInit {
   };
 }
 
-// ==================== Fetch Operations ====================
+// ==================== READ Operations (Projects) ====================
 
-async function fetchFromStrapi(endpoint: string, options: RequestInit = {}) {
+export async function getProjects(limit = 100): Promise<Project[]> {
   try {
-    const response = await fetch(`${STRAPI_URL}/api/${endpoint}`, {
-      ...options,
-      headers: { ...getHeaders(), ...options.headers },
+    const res = await fetch(`${STRAPI_URL}/api/projects?populate=*&sort=publishedAt:desc&pagination[pageSize]=${limit}`, {
+      headers: getHeaders(),
+      next: { revalidate: 60 }
     });
+    const json = await res.json();
+    return flattenStrapiData(json.data) || [];
+  } catch (error) {
+    return [];
+  }
+}
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error(`Strapi Error [${endpoint}]:`, error);
-      return null;
-    }
-
-    const json = await response.json();
-    return flattenStrapiData(json.data);
-  } catch (err) {
-    console.error(`Fetch error [${endpoint}]:`, err);
+export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/projects?filters[slug][$eq]=${slug}&populate=*`, { headers: getHeaders() });
+    const json = await res.json();
+    const data = flattenStrapiData(json.data);
+    return data && data.length > 0 ? data[0] : null;
+  } catch (error) {
     return null;
   }
 }
 
-// ==================== Projects Logic ====================
-
-export async function getProjects(limit = 100): Promise<Project[]> {
-  const data = await fetchFromStrapi(`projects?populate=*&sort=publishedAt:desc&pagination[pageSize]=${limit}`, {
-    next: { revalidate: 60 }
-  });
-  return data || [];
-}
-
-export async function getProjectBySlug(slug: string): Promise<Project | null> {
-  const data = await fetchFromStrapi(`projects?filters[slug][$eq]=${slug}&populate=*`);
-  return data && data.length > 0 ? data[0] : null;
-}
-
 export async function getFeaturedProjects(limit = 3): Promise<Project[]> {
-  const data = await fetchFromStrapi(`projects?filters[featured][$eq]=true&populate=*&pagination[pageSize]=${limit}`);
-  return data || [];
+  const projects = await getProjects(limit);
+  return projects.filter(p => p.featured);
 }
 
-// ==================== Articles Logic ====================
+// ==================== READ Operations (Articles) ====================
 
 export async function getArticles(): Promise<Article[]> {
-  const data = await fetchFromStrapi(`articles?populate=*&sort=publishedAt:desc`, {
-    next: { revalidate: 3600 }
-  });
-  return data || [];
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/articles?populate=*&sort=publishedAt:desc`, {
+      headers: getHeaders(),
+      next: { revalidate: 3600 }
+    });
+    const json = await res.json();
+    return flattenStrapiData(json.data) || [];
+  } catch (error) {
+    return [];
+  }
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const data = await fetchFromStrapi(`articles?filters[slug][$eq]=${slug}&populate=*`);
-  return data && data.length > 0 ? data[0] : null;
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/articles?filters[slug][$eq]=${slug}&populate=*`, { headers: getHeaders() });
+    const json = await res.json();
+    const data = flattenStrapiData(json.data);
+    return data && data.length > 0 ? data[0] : null;
+  } catch (error) {
+    return null;
+  }
 }
 
-// ==================== Contact Logic ====================
+// ==================== ADMIN & WRITE Operations ====================
 
-export async function sendContactMessage(data: { name: string; email: string; message: string }): Promise<boolean> {
-  const res = await fetch(`${STRAPI_URL}/api/contacts`, {
+export async function searchProjects(filters: any = {}): Promise<Project[]> {
+  const { query } = filters;
+  const params = new URLSearchParams({ populate: "*" });
+  if (query) params.append("filters[title][$containsi]", query);
+  
+  const res = await fetch(`${STRAPI_URL}/api/projects?${params.toString()}`, { headers: getHeaders() });
+  const json = await res.json();
+  return flattenStrapiData(json.data) || [];
+}
+
+export async function getAllTags(): Promise<string[]> {
+  const projects = await getProjects();
+  const tags = projects.flatMap(p => p.tags?.map(t => t.name) || []);
+  return Array.from(new Set(tags)).sort();
+}
+
+export async function createProject(data: any) {
+  const res = await fetch(`${STRAPI_URL}/api/projects`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ data }),
   });
+  return res.ok ? await res.json() : null;
+}
+
+export async function updateProject(id: string | number, data: any) {
+  const res = await fetch(`${STRAPI_URL}/api/projects/${id}`, {
+    method: "PUT",
+    headers: getHeaders(),
+    body: JSON.stringify({ data }),
+  });
   return res.ok;
+}
+
+export async function deleteProject(id: string | number) {
+  const res = await fetch(`${STRAPI_URL}/api/projects/${id}`, {
+    method: "DELETE",
+    headers: getHeaders(),
+  });
+  return res.ok;
+}
+
+export async function uploadImage(file: File) {
+  const formData = new FormData();
+  formData.append("files", file);
+  const res = await fetch(`${STRAPI_URL}/api/upload`, {
+    method: "POST",
+    headers: STRAPI_API_TOKEN ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {},
+    body: formData,
+  });
+  const data = await res.json();
+  return { url: data[0].url };
+}
+
+// ==================== CONTACT Operations ====================
+
+export async function sendContactMessage(data: { name: string; email: string; message: string }): Promise<boolean> {
+  try {
+    const res = await fetch(`${STRAPI_URL}/api/contacts`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ data }),
+    });
+    return res.ok;
+  } catch (error) {
+    return false;
+  }
 }
