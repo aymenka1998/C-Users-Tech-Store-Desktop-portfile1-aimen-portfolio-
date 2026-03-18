@@ -1,6 +1,5 @@
 // app/blog/[slug]/page.tsx
 export const dynamic = 'force-dynamic';
-
 import { getArticleBySlug, getStrapiImageUrl } from "../../../lib/strapi";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -66,7 +65,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
 
         {/* صورة الغلاف */}
         {imageUrl && imageUrl !== "/placeholder-project.jpg" && (
-          <div className="relative w-full h-[300px] md:h-[500px] rounded-3xl overflow-hidden mb-16 border border-white/10">
+          <div className="relative w-full h-75 md:h-125 rounded-3xl overflow-hidden mb-16 border border-white/10">
             <Image
               src={imageUrl}
               alt={title}

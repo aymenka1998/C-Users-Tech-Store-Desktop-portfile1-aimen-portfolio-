@@ -1,36 +1,21 @@
 {
   "compilerOptions": {
-    "target": "ESNext", // تم التحديث لدعم أحدث ميزات JS
+    "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false, // يفضل جعله false مؤقتاً لضمان نجاح الـ Build وتجاوز تعارض الأنواع في Strapi
+    "strict": true, // تفعيل الوضع الصارم للنظافة البرمجية
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve", // Next.js يفضل preserve في الإصدارات الحديثة
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./*"] // تعديل مهم: إذا كانت مجلداتك (app, lib) في المجلد الرئيسي وليس داخل src
-    }
+    "plugins": [{ "name": "next" }],
+    "paths": { "@/*": ["./*"] }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "**/*.js",
-    "**/*.jsx",
-    "next.config.js",
-    "next.config.mjs"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

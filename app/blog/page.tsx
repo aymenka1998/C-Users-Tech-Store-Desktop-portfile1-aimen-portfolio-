@@ -1,6 +1,6 @@
 // app/blog/page.tsx
 export const dynamic = 'force-dynamic';
-import { getArticles, getStrapiImageUrl } from "../../lib/strapi";
+import { getArticles, getStrapiImageUrl, type Article } from "../../lib/strapi";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, ArrowRight } from "lucide-react";
@@ -11,15 +11,15 @@ export const metadata = {
 };
 
 export default async function BlogPage() {
-  // جلب البيانات (ستصلنا البيانات مسطحة Flattened بفضل التعديل الأخير في lib/strapi.ts)
+  // جلب البيانات مع معالجة حالة الخطأ
   const fetchedArticles = await getArticles();
-  const articles = Array.isArray(fetchedArticles) ? fetchedArticles : [];
+  const articles: Article[] = Array.isArray(fetchedArticles) ? fetchedArticles : [];
 
   return (
     <main className="min-h-screen py-24 px-6 max-w-7xl mx-auto">
       {/* Header Section */}
       <div className="mb-16 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-linear-to-r from-white to-gray-500 bg-clip-text text-transparent">
           Technical Articles
         </h1>
         <p className="text-gray-400 max-w-2xl mx-auto">
@@ -30,18 +30,16 @@ export default async function BlogPage() {
       {/* Articles Grid */}
       {articles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map((article: any) => {
-            // التعديل هنا: في Strapi v5 البيانات مباشرة داخل الكائن وليست داخل attributes
-            // وقمنا بتعريف الحقول في الـ Interface سابقاً
-            const { title, description, cover, slug, publishedAt } = article;
+          {articles.map((article: Article) => {
+            const { title, description, cover, slug, publishedAt, id, documentId } = article;
             
-            // في v5، هيكلية الصورة cover أصبحت مباشرة أيضاً
+            // استخدام دالة الصور الذكية
             const imageUrl = getStrapiImageUrl(cover?.url || null);
 
             return (
               <Link 
                 href={`/blog/${slug}`} 
-                key={article.id}
+                key={documentId || id}
                 className="group relative bg-[#111111] border border-white/10 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all duration-300"
               >
                 {/* Image Container */}
@@ -51,10 +49,11 @@ export default async function BlogPage() {
                       src={imageUrl}
                       alt={title || "Blog Post"}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-900/20 to-black flex items-center justify-center">
+                    <div className="w-full h-full bg-linear-to-br from-purple-900/20 to-black flex items-center justify-center">
                       <span className="text-gray-600 text-xs">No Image Available</span>
                     </div>
                   )}
@@ -85,7 +84,7 @@ export default async function BlogPage() {
                   </p>
 
                   <div className="flex items-center text-purple-400 text-sm font-semibold group-hover:gap-2 transition-all">
-                    Read Article <ArrowRight size={16} className="ml-1" />
+                    Read Article <ArrowRight size={16} className="ml-2 h-4 w-4" />
                   </div>
                 </div>
               </Link>
