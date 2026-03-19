@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, Github, Calendar, Users, Star, GitFork } from "lucide-react";
 // استيراد المعالج لحل مشكلة [object Object]
 import { BlocksRenderer, type BlocksContent } from "@strapi/blocks-react-renderer";
-
+export const dynamic = 'force-dynamic';
 interface Props {
   params: { slug: string };
 }
