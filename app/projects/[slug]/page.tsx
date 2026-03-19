@@ -1,7 +1,7 @@
 // app/projects/page.tsx
 // أجبر Next.js على جلب بيانات جديدة عند كل طلب
 export const dynamic = 'force-dynamic';
-
+export const revalidate = 0;
 import { getProjects, getStrapiImageUrl, type Project } from "../../../lib/strapi";
 import Image from "next/image";
 import Link from "next/link";
