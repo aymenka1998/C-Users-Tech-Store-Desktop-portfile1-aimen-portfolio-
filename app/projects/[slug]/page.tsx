@@ -16,7 +16,18 @@ export default async function ProjectsPage() {
   // جلب المشاريع باستخدام الدالة المحدثة التي تستخدم cache: 'no-store'
   const fetchedProjects = await getProjects();
   const projects: Project[] = Array.isArray(fetchedProjects) ? fetchedProjects : [];
-
+if (!projects || projects.length === 0) {
+    return (
+      <div className="min-h-screen pt-32 text-center">
+        <h1 className="text-white text-2xl">No Projects Found</h1>
+        <p className="text-gray-500">Check if the API is returning data correctly to the server.</p>
+        {/* هذا السطر سيساعدنا في معرفة ما إذا كان هناك خطأ في الربط */}
+        <pre className="text-xs text-red-500 mt-10">
+          API URL: {process.env.NEXT_PUBLIC_STRAPI_URL}
+        </pre>
+      </div>
+    );
+  }
   return (
     <main className="min-h-screen py-24 px-6 max-w-7xl mx-auto bg-[#050505]">
       <div className="mb-16 text-center">

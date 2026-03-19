@@ -47,30 +47,41 @@ export interface Article {
 
 function flattenStrapiData(data: any): any {
   if (!data) return null;
-  if (Array.isArray(data)) return data.map(flattenStrapiData);
+
+  // التعامل مع المصفوفات (قائمة المشاريع)
+  if (Array.isArray(data)) {
+    return data.map(flattenStrapiData);
+  }
 
   let flattened: any = {};
+
+  // 1. جلب المعرفات الأساسية
   if (data.id) flattened.id = data.id;
   if (data.documentId) flattened.documentId = data.documentId;
 
-  const attributes = data.attributes ? data.attributes : data;
+  // 2. تحديد مصدر البيانات (attributes في v4 أو البيانات مباشرة في v5)
+  const attributes = data.attributes || data;
 
   for (const key in attributes) {
     if (key === 'id' || key === 'documentId' || key === 'attributes') continue;
+
     const value = attributes[key];
 
-    if (value && typeof value === "object") {
-      if (value.data !== undefined) {
-        flattened[key] = flattenStrapiData(value.data);
-      } else if (Array.isArray(value)) {
+    // 3. معالجة الصور والعلاقات (تجنب التداخل اللانهائي)
+    if (value && typeof value === 'object') {
+      if (Array.isArray(value)) {
         flattened[key] = value.map(flattenStrapiData);
+      } else if (value.data !== undefined) {
+        flattened[key] = flattenStrapiData(value.data);
       } else {
+        // إذا كان كائناً عادياً (مثل Blocks المحتوى)، نأخذه كما هو
         flattened[key] = value;
       }
     } else {
       flattened[key] = value;
     }
   }
+
   return flattened;
 }
 
