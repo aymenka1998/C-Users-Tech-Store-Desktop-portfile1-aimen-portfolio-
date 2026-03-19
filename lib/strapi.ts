@@ -22,6 +22,11 @@ export interface Project {
     url: string;
     alternativeText: string | null;
   } | null;
+teamSize?: number | string | null;
+  stars?: number | null;
+  forks?: number | null;
+
+
 }
 
 export interface Article {

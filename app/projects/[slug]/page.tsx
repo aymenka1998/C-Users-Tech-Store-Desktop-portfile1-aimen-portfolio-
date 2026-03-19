@@ -4,13 +4,13 @@ import { getProjectBySlug, getProjects, getStrapiImageUrl } from "../../../lib/s
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Github, Calendar, Users, Star, GitFork } from "lucide-react";
-import { motion } from "framer-motion";
+// استيراد المعالج لحل مشكلة [object Object]
+import { BlocksRenderer, type BlocksContent } from "@strapi/blocks-react-renderer";
 
 interface Props {
   params: { slug: string };
 }
 
-// Generate static params for all projects
 export async function generateStaticParams() {
   const projects = await getProjects();
   return projects.map((project) => ({
@@ -18,14 +18,9 @@ export async function generateStaticParams() {
   }));
 }
 
-// Generate metadata for the page
 export async function generateMetadata({ params }: Props) {
   const project = await getProjectBySlug(params.slug);
-  
-  if (!project) {
-    return { title: "Project Not Found" };
-  }
-
+  if (!project) return { title: "Project Not Found" };
   return {
     title: `${project.title} | Aimen Kaour`,
     description: project.description,
@@ -40,19 +35,19 @@ export default async function ProjectPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20">
+    <main className="min-h-screen bg-gray-50 dark:bg-[#050505] pt-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Back Button */}
         <Link
           href="/#projects"
-          className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mb-8 transition-colors"
+          className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-purple-400 mb-8 transition-colors"
         >
           <ArrowLeft size={20} className="mr-2" />
           Back to Projects
         </Link>
 
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        {/* Header Container */}
+        <div className="bg-white dark:bg-[#111] rounded-2xl shadow-lg overflow-hidden border border-white/5">
           {/* Project Image */}
           {project.image && (
             <div className="relative h-64 md:h-96 w-full">
@@ -63,34 +58,29 @@ export default async function ProjectPage({ params }: Props) {
                 className="object-cover"
                 priority
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              {/* تصحيح الكلاس بناءً على تحذير Tailwind */}
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
                   {project.title}
                 </h1>
                 <div className="flex flex-wrap gap-4 text-white/80 text-sm">
                   {project.date && (
-                    <span className="flex items-center gap-1">
-                      <Calendar size={16} />
+                    <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                      <Calendar size={14} />
                       {new Date(project.date).toLocaleDateString()}
                     </span>
                   )}
                   {project.teamSize && (
-                    <span className="flex items-center gap-1">
-                      <Users size={16} />
+                    <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                      <Users size={14} />
                       {project.teamSize} members
                     </span>
                   )}
-                  {project.stars !== null && (
-                    <span className="flex items-center gap-1">
-                      <Star size={16} />
+                  {project.stars !== undefined && project.stars !== null && (
+                    <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                      <Star size={14} className="text-yellow-400" />
                       {project.stars} stars
-                    </span>
-                  )}
-                  {project.forks !== null && (
-                    <span className="flex items-center gap-1">
-                      <GitFork size={16} />
-                      {project.forks} forks
                     </span>
                   )}
                 </div>
@@ -98,44 +88,44 @@ export default async function ProjectPage({ params }: Props) {
             </div>
           )}
 
-          {/* Content */}
-          <div className="p-6 md:p-8">
+          {/* Content Body */}
+          <div className="p-6 md:p-10">
             {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-8">
               {project.tags?.map((tag) => (
                 <span
                   key={tag.name}
-                  className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium"
+                  className="px-4 py-1.5 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold uppercase tracking-wider border border-purple-500/20"
                 >
                   {tag.name}
                 </span>
               ))}
             </div>
 
-            {/* Description */}
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+            {/* Main Description */}
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-10 leading-relaxed font-medium">
               {project.description}
             </p>
 
-            {/* Rich Content */}
+            {/* Rich Content (Fix for [object Object]) */}
             {project.content && (
-              <div 
-                className="prose dark:prose-invert max-w-none mb-8"
-                dangerouslySetInnerHTML={{ __html: project.content }}
-              />
+              <div className="prose dark:prose-invert prose-purple max-w-none mb-12 
+                prose-p:text-gray-400 prose-p:leading-loose prose-p:text-lg">
+                <BlocksRenderer content={project.content as unknown as BlocksContent} />
+              </div>
             )}
 
             {/* Actions */}
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 pt-6 border-t border-white/5">
               {project.liveUrl && (
                 <a
                   href={project.liveUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-8 py-4 rounded-full bg-purple-600 text-white font-bold hover:bg-purple-500 transition-all hover:scale-105 shadow-lg shadow-purple-600/20"
                 >
                   <ExternalLink size={20} className="mr-2" />
-                  View Live Demo
+                  Live Demo
                 </a>
               )}
               {project.githubUrl && (
@@ -143,10 +133,10 @@ export default async function ProjectPage({ params }: Props) {
                   href={project.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 rounded-full border-2 border-gray-300 dark:border-gray-600 font-semibold hover:border-blue-600 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-colors"
+                  className="inline-flex items-center px-8 py-4 rounded-full border border-white/10 bg-white/5 text-white font-bold hover:bg-white/10 transition-all hover:scale-105"
                 >
                   <Github size={20} className="mr-2" />
-                  View Source Code
+                  Source Code
                 </a>
               )}
             </div>
