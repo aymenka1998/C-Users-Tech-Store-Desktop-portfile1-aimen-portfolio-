@@ -75,6 +75,7 @@ export default function ProjectCard({
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
+        whileTap={{ scale: 0.99 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
         onClick={handleCardClick}
