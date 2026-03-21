@@ -60,7 +60,7 @@ export default function ProjectCard({
     );
   };
 
-  // دالة تفتح الرابط عند الضغط على الكارد
+  // فتح الرابط عند الضغط على الكارد
   const handleCardClick = () => {
     if (onClick) {
       onClick();
@@ -70,6 +70,13 @@ export default function ProjectCard({
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // فتح رابط محدد مع منع الـ event من الانتشار للكارد
+  const handleLinkClick = (e: React.MouseEvent, url: string) => {
+    e.stopPropagation();
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // ==================== Horizontal Layout ====================
   if (layout === "horizontal") {
     return (
       <motion.div
@@ -79,11 +86,12 @@ export default function ProjectCard({
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
         onClick={handleCardClick}
-        className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
+        style={{ cursor: "pointer" }}
+        className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
       >
         <div className="grid md:grid-cols-2 gap-0">
           {/* صورة المشروع */}
-          <div className="relative h-64 md:h-full bg-linear-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-pink-900/20 overflow-hidden">
+          <div className="relative h-64 md:h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-pink-900/20 overflow-hidden">
             {image ? (
               <Image
                 src={image}
@@ -154,28 +162,22 @@ export default function ProjectCard({
               {/* أزرار الروابط */}
               <div className="flex gap-3">
                 {liveUrl && (
-                  <a
-                    href={liveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    onClick={(e) => handleLinkClick(e, liveUrl)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <ExternalLink size={15} />
                     Live Demo
-                  </a>
+                  </button>
                 )}
                 {githubUrl && (
-                  <a
-                    href={githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    onClick={(e) => handleLinkClick(e, githubUrl)}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors"
                   >
                     <Github size={15} />
                     GitHub
-                  </a>
+                  </button>
                 )}
               </div>
             </div>
@@ -185,15 +187,17 @@ export default function ProjectCard({
     );
   }
 
-  // التخطيط الافتراضي (Default Card)
+  // ==================== Default Layout ====================
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.99 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
       onClick={handleCardClick}
-      className="group bg-gray-50 dark:bg-gray-700 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col h-full cursor-pointer"
+      style={{ cursor: "pointer" }}
+      className="group bg-gray-50 dark:bg-gray-700 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col h-full"
     >
       <div className="relative h-48 overflow-hidden">
         {image ? (
@@ -211,26 +215,20 @@ export default function ProjectCard({
         {/* أزرار تظهر عند الـ hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
           {liveUrl && (
-            <a
-              href={liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+            <button
+              onClick={(e) => handleLinkClick(e, liveUrl)}
               className="p-3 bg-white rounded-full hover:scale-110 transition-transform"
             >
               <ExternalLink size={18} className="text-gray-900" />
-            </a>
+            </button>
           )}
           {githubUrl && (
-            <a
-              href={githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+            <button
+              onClick={(e) => handleLinkClick(e, githubUrl)}
               className="p-3 bg-white rounded-full hover:scale-110 transition-transform"
             >
               <Github size={18} className="text-gray-900" />
-            </a>
+            </button>
           )}
         </div>
         {featured && (
@@ -253,7 +251,6 @@ export default function ProjectCard({
         <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2 flex-1">
           {description}
         </p>
-        {/* معلومات إضافية */}
         {(date || stars !== undefined) && (
           <div className="flex gap-3 text-xs text-gray-500 mb-3">
             {date && (
@@ -283,6 +280,7 @@ export default function ProjectCard({
   );
 }
 
+// ==================== Project Grid ====================
 export function ProjectGrid({
   projects,
   columns = 3,
