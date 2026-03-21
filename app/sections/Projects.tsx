@@ -38,13 +38,27 @@ export default function Projects() {
     return `https://${trimmed}`;
   };
 
+  // دالة مساعدة لتحويل tags إلى مصفوفة strings
+  const normalizeTags = (tags: Project['tags']): string[] => {
+    if (!tags) return [];
+    if (Array.isArray(tags)) {
+      return tags.map(tag => {
+        if (typeof tag === 'string') return tag;
+        if (typeof tag === 'object' && tag !== null && 'name' in tag) {
+          return tag.name;
+        }
+        return String(tag);
+      });
+    }
+    return [];
+  };
+
   const formatProjectForCard = (project: Project, index: number): ProjectCardProps => ({
     id: project.documentId || project.id.toString(),
     title: project.title,
     description: project.description,
     image: getStrapiImageUrl(project.image?.url || null),
-    tags: project.tags?.map((t) => t.name) || [],
-    // استخدام الدالة الجديدة هنا لإصلاح الرابط
+    tags: normalizeTags(project.tags), // <-- استخدام الدالة المساعدة هنا
     liveUrl: sanitizeUrl(project.liveUrl),
     githubUrl: sanitizeUrl(project.githubUrl),
     featured: project.featured,
@@ -98,7 +112,7 @@ export default function Projects() {
 
         <div className="text-center mt-16">
           <a 
-            href="https://github.com/aimenkaour" 
+            href="https://github.com/aymenka1998/C-Users-Tech-Store-Desktop-portfile1-aimen-portfolio-.git" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-bold hover:bg-blue-600 hover:text-white transition-all group"
