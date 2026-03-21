@@ -53,21 +53,26 @@ export default function Projects() {
     return [];
   };
 
-  const formatProjectForCard = (project: Project, index: number): ProjectCardProps => ({
+const formatProjectForCard = (project: Project, index: number): ProjectCardProps => {
+  // debug مؤقت
+  console.log("RAW project:", project.title, project.liveUrl, project.githubUrl);
+  
+  return {
     id: project.documentId || project.id.toString(),
     title: project.title,
     description: project.description,
     image: getStrapiImageUrl(project.image?.url || null),
-    tags: normalizeTags(project.tags), // <-- استخدام الدالة المساعدة هنا
-    liveUrl: sanitizeUrl(project.liveUrl),
-    githubUrl: sanitizeUrl(project.githubUrl),
+    tags: normalizeTags(project.tags),
+    liveUrl: sanitizeUrl(project.liveUrl),    // ← تحقق هنا
+    githubUrl: sanitizeUrl(project.githubUrl), // ← وهنا
     featured: project.featured,
     date: project.date ? new Date(project.date).getFullYear().toString() : undefined,
     teamSize: project.teamSize || undefined,
     stars: project.stars || undefined,
     forks: project.forks || undefined,
     index,
-  });
+  };
+};
 
   const featuredProjects = projects.filter(p => p.featured).slice(0, 2).map((p, i) => formatProjectForCard(p, i));
   const regularProjects = projects.filter(p => !p.featured).map((p, i) => formatProjectForCard(p, i));
@@ -95,8 +100,16 @@ export default function Projects() {
         {featuredProjects.length > 0 && (
           <div className="mb-16 space-y-12">
             {featuredProjects.map((project) => (
-              <ProjectCard key={project.id} {...project} layout="horizontal" />
-            ))}
+            <ProjectCard 
+  key={project.id} 
+  {...project} 
+  layout="horizontal"
+  onClick={() => {
+    const url = project.liveUrl || project.githubUrl;
+    if (url) window.open(url, '_blank');
+  }}
+/>
+            ))}   
           </div>
         )}
 

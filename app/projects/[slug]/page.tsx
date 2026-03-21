@@ -110,7 +110,7 @@ export default async function ProjectDetailPage({
           </div>
 
           {/* Project Image */}
-          <div className="relative w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden border border-white/10 mb-12">
+          <div className="relative w-full h-100 md:h-125 rounded-3xl overflow-hidden border border-white/10 mb-12">
             <Image
               src={getStrapiImageUrl(project.image?.url || null)}
               alt={project.title}
@@ -118,7 +118,7 @@ export default async function ProjectDetailPage({
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-[#050505] via-transparent to-transparent" />
           </div>
 
           {/* Project Info Grid */}
